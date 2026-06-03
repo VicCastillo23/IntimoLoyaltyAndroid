@@ -1,19 +1,17 @@
 package com.intimocoffee.loyalty.feature.history.presentation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,97 +34,97 @@ class HistoryViewModel @Inject constructor(
     private val apiService: LoyaltyApiService,
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
-    
+
     private val _transactions = MutableStateFlow<List<TransactionResponse>>(emptyList())
     val transactions: StateFlow<List<TransactionResponse>> = _transactions
-    
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
-    
-    init { loadAll() }
-    
-    fun loadAll() {
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
+    init { loadAll(isPullRefresh = false) }
+
+    fun loadAll(isPullRefresh: Boolean = false) {
         viewModelScope.launch {
-            _isLoading.value = true
+            if (isPullRefresh) _isRefreshing.value = true else _isLoading.value = true
             try {
                 val customerId = sessionDataStore.customerId.first() ?: return@launch
                 val response = apiService.getTransactions(customerId, limit = 100)
                 _transactions.value = response.body()?.data ?: emptyList()
             } catch (_: Exception) { }
             _isLoading.value = false
+            _isRefreshing.value = false
         }
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val transactions by viewModel.transactions.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = { viewModel.loadAll(isPullRefresh = true) }
+    )
+
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(16.dp))
         Text("Historial", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
-        Text("Todas tus transacciones", style = MaterialTheme.typography.bodyMedium, color = IntimoColors.SubtleText)
+        Text("Compras y puntos", style = MaterialTheme.typography.bodyMedium, color = IntimoColors.SubtleText)
         Spacer(Modifier.height(16.dp))
-        
-        if (isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) }
+
+        if (isLoading && !isRefreshing) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color.White)
+            }
         } else if (transactions.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Sin transacciones aún", style = MaterialTheme.typography.bodyLarge, color = IntimoColors.SubtleText)
             }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(bottom = 16.dp)) {
-                items(transactions) { tx ->
-                    val isEarn = tx.type == "EARN"
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = IntimoColors.CardBackground),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(14.dp).fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+            Box(Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(transactions) { tx ->
+                        val isEarn = tx.type == "EARN"
+                        val title = if (isEarn) "Compra" else "Canje"
+                        val points = if (isEarn) tx.pointsEarned else tx.pointsRedeemed
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = IntimoColors.CardBackground),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isEarn) IntimoColors.Green.copy(alpha = 0.15f) else IntimoColors.Red.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        if (isEarn) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
-                                        null,
-                                        tint = if (isEarn) IntimoColors.Green else IntimoColors.Red,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                                Spacer(Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        tx.description ?: if (isEarn) "Puntos ganados" else "Canje",
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        tx.createdAt.take(16).replace("T", " "),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = IntimoColors.SubtleText
-                                    )
-                                }
+                            Row(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(title, fontWeight = FontWeight.Medium, color = Color.White)
+                                Text(
+                                    if (isEarn) "+$points pts" else "-$points pts",
+                                    color = if (isEarn) IntimoColors.Green else IntimoColors.Red,
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
                             }
-                            Text(
-                                if (isEarn) "+${tx.pointsEarned}" else "-${tx.pointsRedeemed}",
-                                color = if (isEarn) IntimoColors.Green else IntimoColors.Red,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium
-                            )
                         }
                     }
                 }
+                PullRefreshIndicator(
+                    refreshing = isRefreshing,
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    contentColor = Color.White,
+                    backgroundColor = IntimoColors.CardBackground
+                )
             }
         }
     }

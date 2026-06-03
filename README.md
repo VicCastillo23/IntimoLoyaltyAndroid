@@ -2,6 +2,8 @@
 
 Repositorio Android del programa de **fidelidad** Intimo Coffee (copia de trabajo a partir de `IntimoCoffeeLoyalty`, Jun 2025).
 
+**Paridad UI/flujo con `IntimoCoffeeLoyalty-iOS`:** mismas pantallas, textos, alertas “Aviso”, historial simplificado, QR local, bottom sheet de cupones, campos `IntimoOutlinedField`, versión mostrada `Intimo Loyalty v1.0.0`.
+
 Aplicación Android para clientes del programa de **fidelidad** de Intimo Coffee Shop. Permite acumular puntos, canjear recompensas y consultar el historial de actividad.
 
 ## 🎯 Características

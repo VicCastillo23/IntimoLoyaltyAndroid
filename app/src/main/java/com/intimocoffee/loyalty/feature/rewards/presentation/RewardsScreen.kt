@@ -2,6 +2,7 @@ package com.intimocoffee.loyalty.feature.rewards.presentation
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -118,7 +119,7 @@ class RewardsViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(message = response.body()?.message ?: "Error al canjear")
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(message = "Error: ${e.message}")
+                _uiState.value = _uiState.value.copy(message = e.message ?: "Error al canjear")
             }
         }
     }
@@ -146,15 +147,22 @@ fun RewardsScreen(
         }
     }
     
-    val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(state.message) {
-        state.message?.let { snackbarHostState.showSnackbar(it); viewModel.clearMessage() }
-    }
-    LaunchedEffect(state.error) {
-        state.error?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
-        }
+    val alertText = state.message ?: state.error
+    if (alertText != null) {
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.clearMessage()
+                viewModel.clearError()
+            },
+            title = { Text("Aviso") },
+            text = { Text(alertText) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.clearMessage()
+                    viewModel.clearError()
+                }) { Text("OK") }
+            }
+        )
     }
     
     val filtered = if (state.selectedCategory == "ALL") state.rewards
@@ -162,11 +170,7 @@ fun RewardsScreen(
     // Cupones: siempre visibles arriba; el filtro de chips solo aplica a la lista de recompensas.
     val activeCoupons = state.coupons
     
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Transparent
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+    Column(modifier = Modifier.fillMaxSize()) {
             // Header
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                 Text(
@@ -192,18 +196,18 @@ fun RewardsScreen(
             ) {
                 CATEGORIES.forEach { cat ->
                     val selected = state.selectedCategory == cat.key
-                    FilterChip(
-                        selected = selected,
+                    Surface(
                         onClick = { viewModel.selectCategory(cat.key) },
-                        label = { Text("${cat.icon} ${cat.label}", fontSize = 13.sp) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color.White,
-                            selectedLabelColor = Color.Black,
-                            containerColor = Color(0xFF2A2A2A),
-                            labelColor = Color(0xFFAAAAAA)
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
+                        shape = RoundedCornerShape(50),
+                        color = if (selected) Color.White else IntimoColors.ChipBg,
+                    ) {
+                        Text(
+                            "${cat.icon} ${cat.label}",
+                            fontSize = 13.sp,
+                            color = if (selected) Color.Black else Color(0xFFAAAAAA),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
             
@@ -255,24 +259,13 @@ fun RewardsScreen(
                 }
             }
         }
-    }
-    
+
     showDialog?.let { reward ->
         AlertDialog(
             onDismissRequest = { showDialog = null },
             title = { Text("Confirmar Canje", color = Color.White) },
             text = {
-                Column {
-                    Text("¿Canjear ${reward.name} por ${reward.pointsCost} puntos?", color = Color.White)
-                    reward.discountPercent?.let {
-                        Spacer(Modifier.height(4.dp))
-                        Text("Descuento: $it%", color = IntimoColors.Green, fontWeight = FontWeight.Medium)
-                    }
-                    reward.couponCode?.let {
-                        Spacer(Modifier.height(4.dp))
-                        Text("Código: $it", color = IntimoColors.SubtleText)
-                    }
-                }
+                Text("¿Canjear ${reward.name} por ${reward.pointsCost} puntos?", color = Color.White)
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.redeem(reward.id); showDialog = null }) {
@@ -289,10 +282,7 @@ fun RewardsScreen(
     }
 
     selectedCoupon?.let { coupon ->
-        CouponQrDialog(
-            coupon = coupon,
-            onDismiss = { selectedCoupon = null }
-        )
+        CouponQrSheet(coupon = coupon, onDismiss = { selectedCoupon = null })
     }
 }
 
@@ -351,45 +341,51 @@ private fun CouponCard(coupon: CouponResponse, onShowQr: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CouponQrDialog(
+private fun CouponQrSheet(
     coupon: CouponResponse,
     onDismiss: () -> Unit
 ) {
     val qrBitmap = remember(coupon.qrData) { generateQrBitmap(coupon.qrData) }
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text("Cupón: ${coupon.rewardName}", color = Color.White) },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                qrBitmap?.let {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Image(
-                            bitmap = it.asImageBitmap(),
-                            contentDescription = "QR cupón",
-                            modifier = Modifier
-                                .size(220.dp)
-                                .padding(16.dp)
-                        )
-                    }
+        containerColor = Color(0xFF121212)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Cupón: ${coupon.rewardName}", color = Color.White, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(16.dp))
+            qrBitmap?.let {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = "QR cupón",
+                        modifier = Modifier
+                            .size(220.dp)
+                            .padding(16.dp)
+                    )
                 }
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Muestra este QR en caja para aplicar tu cupón",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = IntimoColors.SubtleText,
-                    textAlign = TextAlign.Center
-                )
             }
-        },
-        confirmButton = {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Muestra este QR en caja para aplicar tu cupón",
+                style = MaterialTheme.typography.bodySmall,
+                color = IntimoColors.SubtleText,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(16.dp))
             TextButton(onClick = onDismiss) { Text("Cerrar", color = Color.White) }
-        },
-        containerColor = Color(0xFF2A2A2A)
-    )
+            Spacer(Modifier.height(16.dp))
+        }
+    }
 }
 
 private fun generateQrBitmap(data: String): Bitmap? {
@@ -506,32 +502,6 @@ private fun RewardCard(reward: RewardResponse, currentPoints: Int, onRedeem: () 
                             )
                         }
                     }
-                    
-                    // Event dates
-                    if (reward.category == "EVENT" && reward.validFrom != null) {
-                        Text(
-                            "${reward.validFrom.take(10)} - ${reward.validUntil?.take(10) ?: ""}",
-                            fontSize = 10.sp,
-                            color = IntimoColors.SubtleText
-                        )
-                    }
-                }
-                
-                // Coupon code for events
-                if (reward.category == "EVENT" && reward.couponCode != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFF333333)
-                    ) {
-                        Text(
-                            "🎟️ ${reward.couponCode}",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                            fontSize = 11.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
                 }
             }
             
@@ -557,7 +527,7 @@ private fun RewardCard(reward: RewardResponse, currentPoints: Int, onRedeem: () 
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.White,
                             contentColor = Color.Black,
-                            disabledContainerColor = Color(0xFF3A3A3A),
+                            disabledContainerColor = Color(0xFF3B3B3B),
                             disabledContentColor = Color(0xFF666666)
                         )
                     ) {

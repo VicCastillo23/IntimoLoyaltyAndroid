@@ -37,6 +37,7 @@ import com.intimocoffee.loyalty.feature.qrcode.presentation.QRCodeScreen
 import com.intimocoffee.loyalty.feature.rewards.presentation.RewardsScreen
 import com.intimocoffee.loyalty.feature.settings.presentation.SettingsScreen
 import com.intimocoffee.loyalty.ui.theme.IntimoCoffeeLoyaltyTheme
+import com.intimocoffee.loyalty.ui.theme.IntimoColors
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -133,7 +134,7 @@ fun MainScreen(onLogout: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             NavigationBar(
-                containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A),
+                containerColor = IntimoColors.TabBar,
                 contentColor = androidx.compose.ui.graphics.Color.White
             ) {
                 val navBackStackEntry by innerNavController.currentBackStackEntryAsState()
@@ -155,7 +156,7 @@ fun MainScreen(onLogout: () -> Unit) {
                             selectedTextColor = androidx.compose.ui.graphics.Color.White,
                             unselectedIconColor = androidx.compose.ui.graphics.Color(0xFF666666),
                             unselectedTextColor = androidx.compose.ui.graphics.Color(0xFF666666),
-                            indicatorColor = androidx.compose.ui.graphics.Color(0xFF333333)
+                            indicatorColor = Color.Transparent
                         )
                     )
                 }

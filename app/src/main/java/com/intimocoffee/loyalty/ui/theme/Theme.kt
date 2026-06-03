@@ -38,11 +38,22 @@ object IntimoColors {
     val Accent = Color(0xFFE0E0E0)
     val SubtleText = Color(0xFF888888)
     val Divider = Color(0xFF333333)
+    val BorderMuted = Color(0xFF444444)
+    val TabBar = Color(0xFF1A1A1A)
+    val ChipBg = Color(0xFF2A2A2A)
+    val GradientStart = Color(0xFF2A2A2A)
+    val GradientEnd = Color(0xFF1A1A1A)
+    val ProgressTrack = Color(0xFF3A3A3A)
     val Green = Color(0xFF66BB6A)
     val Red = Color(0xFFEF5350)
     val Gold = Color(0xFFFFD700)
     val Silver = Color(0xFFC0C0C0)
     val Bronze = Color(0xFFCD7F32)
+}
+
+object IntimoAppInfo {
+    const val brandName = "Intimo Loyalty"
+    const val settingsFooter = "Intimo Loyalty v1.0.0"
 }
 
 @Composable

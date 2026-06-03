@@ -81,7 +81,7 @@ class DashboardViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(isLoading = false, isRefreshing = false)
                     return@launch
                 }
-                val name = sessionDataStore.customerName.first() ?: ""
+                val sessionName = sessionDataStore.customerName.first().orEmpty()
                 
                 val customerResponse = apiService.getCustomer(customerId)
                 val pointsResponse = apiService.getPoints(customerId)
@@ -108,7 +108,7 @@ class DashboardViewModel @Inject constructor(
                     isLoading = false,
                     isRefreshing = false,
                     hasLoadedOnce = true,
-                    customerName = name,
+                    customerName = sessionName.ifBlank { customer?.name.orEmpty() },
                     totalPoints = currentPoints,
                     lifetimePoints = points?.lifetimePoints ?: 0,
                     tier = points?.tier ?: "BRONZE",
@@ -314,6 +314,17 @@ fun DashboardScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
+            }
+        }
+
+        state.error?.let { err ->
+            item {
+                Text(
+                    err,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = IntimoColors.Red,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
         }
         }

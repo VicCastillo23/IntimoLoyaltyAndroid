@@ -23,15 +23,15 @@ class AuthViewModel @Inject constructor(
     private val apiService: LoyaltyApiService,
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState
-    
+
     fun login(phone: String, password: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             try {
-                val response = apiService.login(LoginRequest(phone, password))
+                val response = apiService.login(LoginRequest(phone.trim(), password))
                 if (response.isSuccessful && response.body()?.success == true) {
                     val customer = response.body()!!.data!!
                     sessionDataStore.saveSession(customer.id, customer.name, customer.phone)
@@ -42,18 +42,18 @@ class AuthViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                _uiState.value = AuthUiState(
-                    errorMessage = "No se pudo conectar al servidor: ${e.message}"
-                )
+                _uiState.value = AuthUiState(errorMessage = e.message ?: "Error al iniciar sesión")
             }
         }
     }
-    
+
     fun register(name: String, phone: String, password: String, email: String?) {
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             try {
-                val response = apiService.register(RegisterRequest(name, phone, password, email))
+                val response = apiService.register(
+                    RegisterRequest(name.trim(), phone.trim(), password, email?.trim()?.ifBlank { null })
+                )
                 if (response.isSuccessful && response.body()?.success == true) {
                     val customer = response.body()!!.data!!
                     sessionDataStore.saveSession(customer.id, customer.name, customer.phone)
@@ -64,13 +64,11 @@ class AuthViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                _uiState.value = AuthUiState(
-                    errorMessage = "No se pudo conectar al servidor: ${e.message}"
-                )
+                _uiState.value = AuthUiState(errorMessage = e.message ?: "Error al registrarse")
             }
         }
     }
-    
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
