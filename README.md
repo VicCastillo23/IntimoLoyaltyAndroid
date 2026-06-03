@@ -97,8 +97,18 @@ Esta app se conecta a **IntimoCoffeeApp** (el servidor POS) a través de los end
 ### Compilar
 
 ```bash
+# Debug (instalar por USB)
 ./gradlew assembleDebug
+
+# Release para Google Play (requiere keystore.properties)
+./scripts/build-release-aab.sh
 ```
+
+El APK debug **no** se acepta en Play Console. Sube el **AAB** firmado:
+
+`app/build/outputs/bundle/release/app-release.aab`
+
+Copia `keystore.properties.example` → `keystore.properties` y el `.jks` en `keystore/` (no se suben al repo). **Guarda copia del keystore**: sin él no podrás publicar actualizaciones.
 
 ### Branding (paridad con iOS)
 
