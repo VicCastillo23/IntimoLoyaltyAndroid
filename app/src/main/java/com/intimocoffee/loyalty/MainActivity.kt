@@ -75,7 +75,9 @@ class MainActivity : ComponentActivity() {
                         Image(
                             painter = painterResource(id = R.drawable.splash_logo),
                             contentDescription = "Íntimo Coffee",
-                            modifier = Modifier.size(300.dp)
+                            modifier = Modifier
+                                .padding(horizontal = 32.dp)
+                                .size(200.dp)
                         )
                     }
                 } else {

@@ -100,6 +100,11 @@ Esta app se conecta a **IntimoCoffeeApp** (el servidor POS) a través de los end
 ./gradlew assembleDebug
 ```
 
+### Branding (paridad con iOS)
+
+- **Ícono de launcher y splash:** `app/src/main/branding/app_icon_source.png` (copia de iOS `Resources/Branding/app_icon_source.png` — granos de café sobre negro).
+- Regenerar densidades: `python3 scripts/generate-branding-assets.py` (escala el arte al **62 %** del lienzo para la zona segura del adaptive icon de Android, paridad visual con iOS).
+
 ## 📂 Navegación
 
 ```
