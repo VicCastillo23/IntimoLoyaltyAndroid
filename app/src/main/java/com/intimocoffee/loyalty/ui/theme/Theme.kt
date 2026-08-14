@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.intimocoffee.loyalty.BuildConfig
 
 // Intimo Coffee Loyalty — Dark elegant theme
 private val DarkColorScheme = darkColorScheme(
@@ -53,7 +54,8 @@ object IntimoColors {
 
 object IntimoAppInfo {
     const val brandName = "Intimo Loyalty"
-    const val settingsFooter = "Intimo Loyalty v1.0.0"
+    val settingsFooter: String
+        get() = "Intimo Loyalty v${BuildConfig.VERSION_NAME}"
 }
 
 @Composable

@@ -42,10 +42,10 @@ private val CATEGORIES = listOf(
     CategoryInfo("ALL", "Todos", "🎯"),
     CategoryInfo("POINTS", "Puntos", "⭐"),
     CategoryInfo("WELCOME", "Bienvenida", "🎁"),
-    CategoryInfo("VISIT_MILESTONE", "Visitas", "🏅"),
+    CategoryInfo("VISIT_MILESTONE", "Visitas", "☕"),
     CategoryInfo("MONTHLY_VISITS", "Mensual", "📅"),
-    CategoryInfo("TIER_PERK", "Nivel", "👑"),
     CategoryInfo("BIRTHDAY", "Cumpleaños", "🎂"),
+    CategoryInfo("TIER_PERK", "Nivel", "👑"),
     CategoryInfo("SPENDING", "Gasto", "💰"),
     CategoryInfo("EVENT", "Eventos", "🎪")
 )
@@ -75,7 +75,13 @@ class RewardsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
-                val customerId = sessionDataStore.customerId.first() ?: return@launch
+                val customerId = sessionDataStore.customerId.first() ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Sesión no válida. Vuelve a iniciar sesión."
+                    )
+                    return@launch
+                }
                 val rewardsResp = apiService.getRewards()
                 val pointsResp = apiService.getPoints(customerId)
                 val couponsResp = apiService.getCoupons(customerId)

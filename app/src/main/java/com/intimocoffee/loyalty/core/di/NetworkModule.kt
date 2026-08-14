@@ -37,13 +37,18 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
+        val logging = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
         return OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
+            .addInterceptor(logging)
             .build()
     }
     

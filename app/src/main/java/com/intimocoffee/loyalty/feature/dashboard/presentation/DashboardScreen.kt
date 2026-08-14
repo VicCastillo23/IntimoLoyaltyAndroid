@@ -78,7 +78,11 @@ class DashboardViewModel @Inject constructor(
             }
             try {
                 val customerId = sessionDataStore.customerId.first() ?: run {
-                    _uiState.value = _uiState.value.copy(isLoading = false, isRefreshing = false)
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        error = "Sesión no válida. Vuelve a iniciar sesión."
+                    )
                     return@launch
                 }
                 val sessionName = sessionDataStore.customerName.first().orEmpty()
@@ -88,14 +92,48 @@ class DashboardViewModel @Inject constructor(
                 val recentTxResponse = apiService.getTransactions(customerId, limit = 40)
                 val allTxResponse = apiService.getTransactions(customerId, limit = 500)
                 val rewardsResponse = apiService.getRewards()
+
+                fun fail(msg: String) {
+                    // Keep previous points/data; do not zero out on failure
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        error = msg
+                    )
+                }
+
+                if (!customerResponse.isSuccessful || customerResponse.body()?.success != true) {
+                    fail(customerResponse.body()?.message ?: "No se pudo cargar el perfil")
+                    return@launch
+                }
+                if (!pointsResponse.isSuccessful || pointsResponse.body()?.success != true) {
+                    fail(pointsResponse.body()?.message ?: "No se pudieron cargar los puntos")
+                    return@launch
+                }
+                if (!recentTxResponse.isSuccessful || recentTxResponse.body()?.success != true) {
+                    fail(recentTxResponse.body()?.message ?: "No se pudieron cargar transacciones")
+                    return@launch
+                }
+                if (!allTxResponse.isSuccessful || allTxResponse.body()?.success != true) {
+                    fail(allTxResponse.body()?.message ?: "No se pudieron cargar transacciones")
+                    return@launch
+                }
+                if (!rewardsResponse.isSuccessful || rewardsResponse.body()?.success != true) {
+                    fail(rewardsResponse.body()?.message ?: "No se pudieron cargar recompensas")
+                    return@launch
+                }
                 
                 val customer = customerResponse.body()?.data
                 val points = pointsResponse.body()?.data
+                    ?: run {
+                        fail("Respuesta de puntos inválida")
+                        return@launch
+                    }
                 val recentTxRaw = recentTxResponse.body()?.data ?: emptyList()
                 val earnVisits = recentTxRaw.filter { it.type == "EARN" }.take(8)
                 val allTransactions = allTxResponse.body()?.data ?: emptyList()
                 val rewards = rewardsResponse.body()?.data ?: emptyList()
-                val currentPoints = points?.totalPoints ?: 0
+                val currentPoints = points.totalPoints
                 
                 // Canjeables: solo rewards con costo > 0 que el cliente puede pagar
                 val redeemable = rewards.count { it.pointsCost > 0 && it.pointsCost <= currentPoints }
@@ -110,8 +148,8 @@ class DashboardViewModel @Inject constructor(
                     hasLoadedOnce = true,
                     customerName = sessionName.ifBlank { customer?.name.orEmpty() },
                     totalPoints = currentPoints,
-                    lifetimePoints = points?.lifetimePoints ?: 0,
-                    tier = points?.tier ?: "BRONZE",
+                    lifetimePoints = points.lifetimePoints,
+                    tier = points.tier,
                     totalVisits = visits,
                     currentMonthVisits = maxOf(customer?.currentMonthVisits ?: 0, earnCount),
                     availableRewards = redeemable,

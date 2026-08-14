@@ -45,8 +45,8 @@ class QRCodeViewModel @Inject constructor(
         viewModelScope.launch {
             val customerId = sessionDataStore.customerId.first() ?: return@launch
             _customerName.value = sessionDataStore.customerName.first().orEmpty()
-            val phone = sessionDataStore.customerPhone.first()?.trim().orEmpty()
-            val qrData = if (phone.isNotBlank()) "INTIMO_LOYALTY:$phone" else "INTIMO_LOYALTY:$customerId"
+            // Preferir ID estable (evita fallos de formato de teléfono en POS).
+            val qrData = "INTIMO_LOYALTY:$customerId"
             try {
                 val writer = QRCodeWriter()
                 val size = 512

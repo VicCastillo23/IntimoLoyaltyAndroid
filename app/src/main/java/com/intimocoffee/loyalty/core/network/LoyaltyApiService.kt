@@ -11,6 +11,9 @@ interface LoyaltyApiService {
     
     @POST("/loyalty/customer/login")
     suspend fun login(@Body request: LoginRequest): Response<ApiResponse<CustomerResponse>>
+
+    @POST("/loyalty/customer/set-password")
+    suspend fun setPassword(@Body request: SetPasswordRequest): Response<ApiResponse<CustomerResponse>>
     
     @GET("/loyalty/customer/{id}")
     suspend fun getCustomer(@Path("id") id: Long): Response<ApiResponse<CustomerResponse>>
@@ -55,6 +58,13 @@ data class RegisterRequest(
 
 @Serializable
 data class LoginRequest(val phone: String, val password: String)
+
+@Serializable
+data class SetPasswordRequest(
+    val phone: String,
+    val newPassword: String,
+    val currentPassword: String? = null
+)
 
 @Serializable
 data class RedeemRequest(val customerId: Long, val rewardId: Long)

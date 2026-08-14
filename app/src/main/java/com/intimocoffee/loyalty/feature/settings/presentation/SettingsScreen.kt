@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -35,7 +36,8 @@ data class SettingsUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val customer: CustomerResponse? = null,
-    val message: String? = null
+    val message: String? = null,
+    val error: String? = null
 )
 
 @HiltViewModel
@@ -51,17 +53,26 @@ class SettingsViewModel @Inject constructor(
 
     fun loadProfile() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                val customerId = sessionDataStore.customerId.first() ?: return@launch
+                val customerId = sessionDataStore.customerId.first() ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Sesión no válida. Vuelve a iniciar sesión."
+                    )
+                    return@launch
+                }
                 val response = apiService.getCustomer(customerId)
-                if (response.isSuccessful) {
+                if (response.isSuccessful && response.body()?.success == true) {
                     _uiState.value = _uiState.value.copy(isLoading = false, customer = response.body()?.data)
                 } else {
-                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = response.body()?.message ?: "No se pudo cargar el perfil"
+                    )
                 }
-            } catch (_: Exception) {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Error")
             }
         }
     }
@@ -73,7 +84,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true)
             try {
-                val customerId = sessionDataStore.customerId.first() ?: return@launch
+                val customerId = sessionDataStore.customerId.first() ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        isSaving = false,
+                        message = "Sesión no válida. Vuelve a iniciar sesión."
+                    )
+                    return@launch
+                }
                 val request = UpdateCustomerRequest(
                     name = name.trim().ifBlank { null },
                     lastName = lastName.trim().ifBlank { null },
@@ -143,6 +160,13 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
     if (state.isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Color.White)
+        }
+        return
+    }
+
+    if (state.error != null && state.customer == null) {
+        Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            Text(state.error.orEmpty(), color = IntimoColors.Red, textAlign = TextAlign.Center)
         }
         return
     }
@@ -260,6 +284,15 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
             Spacer(Modifier.width(8.dp))
             Text("Cerrar Sesión")
         }
+
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "¿Olvidaste tu contraseña o tu cuenta no la tiene? Escríbenos a cafeintimo@gmail.com o acércate al café y te ayudamos a activarla.",
+            style = MaterialTheme.typography.bodySmall,
+            color = IntimoColors.SubtleText,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(Modifier.height(24.dp))
         Text(

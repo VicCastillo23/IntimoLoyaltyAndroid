@@ -50,7 +50,11 @@ class HistoryViewModel @Inject constructor(
         viewModelScope.launch {
             if (isPullRefresh) _isRefreshing.value = true else _isLoading.value = true
             try {
-                val customerId = sessionDataStore.customerId.first() ?: return@launch
+                val customerId = sessionDataStore.customerId.first() ?: run {
+                    _isLoading.value = false
+                    _isRefreshing.value = false
+                    return@launch
+                }
                 val response = apiService.getTransactions(customerId, limit = 100)
                 _transactions.value = response.body()?.data ?: emptyList()
             } catch (_: Exception) { }

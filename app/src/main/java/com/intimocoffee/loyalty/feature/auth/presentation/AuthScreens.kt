@@ -29,9 +29,81 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showSetPasswordDialog by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmNewPassword by remember { mutableStateOf("") }
+    var setPasswordError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) onLoginSuccess()
+    }
+
+    LaunchedEffect(uiState.needsSetPassword) {
+        if (uiState.needsSetPassword) {
+            showSetPasswordDialog = true
+            newPassword = ""
+            confirmNewPassword = ""
+            setPasswordError = null
+        }
+    }
+
+    if (showSetPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showSetPasswordDialog = false
+                viewModel.dismissSetPassword()
+            },
+            title = { Text("Crear contraseña") },
+            text = {
+                Column {
+                    Text(
+                        "Tu cuenta está sin contraseña. Elige una para poder iniciar sesión.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    IntimoOutlinedField(
+                        label = "Nueva contraseña",
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        isPassword = true,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    IntimoOutlinedField(
+                        label = "Confirmar contraseña",
+                        value = confirmNewPassword,
+                        onValueChange = { confirmNewPassword = it },
+                        isPassword = true,
+                    )
+                    setPasswordError?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, color = IntimoColors.Red)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        when {
+                            newPassword.length < 6 -> setPasswordError = "Mínimo 6 caracteres"
+                            newPassword != confirmNewPassword -> setPasswordError = "Las contraseñas no coinciden"
+                            else -> {
+                                setPasswordError = null
+                                val p = uiState.setPasswordPhone ?: phone
+                                viewModel.setPassword(p, newPassword)
+                                showSetPasswordDialog = false
+                            }
+                        }
+                    },
+                    enabled = !uiState.isLoading
+                ) { Text("Guardar") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showSetPasswordDialog = false
+                    viewModel.dismissSetPassword()
+                }) { Text("Cancelar") }
+            }
+        )
     }
 
     Column(
@@ -79,6 +151,13 @@ fun LoginScreen(
         TextButton(onClick = onNavigateToRegister) {
             Text("¿No tienes cuenta? Regístrate", color = IntimoColors.SubtleText)
         }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "¿Olvidaste tu contraseña? Contáctanos en cafeintimo@gmail.com o en el café.",
+            style = MaterialTheme.typography.bodySmall,
+            color = IntimoColors.SubtleText,
+            textAlign = TextAlign.Center
+        )
         uiState.errorMessage?.let { error ->
             Spacer(Modifier.height(8.dp))
             Text(error, color = IntimoColors.Red, textAlign = TextAlign.Center)
