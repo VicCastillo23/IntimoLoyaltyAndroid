@@ -17,10 +17,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.intimocoffee.loyalty.ui.theme.IntimoColors
 import java.time.LocalTime
 
@@ -127,7 +129,8 @@ fun IntimoPromoCard(
     title: String,
     subtitle: String,
     cta: String,
-    gradient: List<Color>,
+    imageUrl: String? = null,
+    gradient: List<Color> = listOf(Color(0xFF5C4030), Color(0xFF3D2817)),
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -141,40 +144,68 @@ fun IntimoPromoCard(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(0.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Brush.linearGradient(gradient)),
-        ) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(20.dp),
-            ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (!imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.9f),
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)),
+                                startY = 80f,
+                            )
+                        ),
                 )
-                Spacer(Modifier.height(12.dp))
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.White,
-                    modifier = Modifier.clickable(onClick = onClick),
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Brush.linearGradient(gradient)),
+                )
+            }
+            if (title.isNotBlank() || subtitle.isNotBlank() || cta.isNotBlank()) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(20.dp),
                 ) {
-                    Text(
-                        cta,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                        color = IntimoColors.Espresso,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    if (title.isNotBlank()) {
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                    }
+                    if (subtitle.isNotBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+                    if (cta.isNotBlank()) {
+                        Spacer(Modifier.height(12.dp))
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White,
+                            modifier = Modifier.clickable(onClick = onClick),
+                        ) {
+                            Text(
+                                cta,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                                color = IntimoColors.Espresso,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -237,7 +268,6 @@ fun IntimoAvatar(initials: String, modifier: Modifier = Modifier, size: androidx
 
 @Composable
 fun IntimoEmptyState(
-    emoji: String,
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
@@ -248,8 +278,6 @@ fun IntimoEmptyState(
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(emoji, fontSize = 40.sp)
-        Spacer(Modifier.height(12.dp))
         Text(
             title,
             style = MaterialTheme.typography.titleMedium,

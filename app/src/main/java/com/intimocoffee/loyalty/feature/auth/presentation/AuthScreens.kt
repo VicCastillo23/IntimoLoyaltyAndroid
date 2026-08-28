@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.intimocoffee.loyalty.R
+import com.intimocoffee.loyalty.ui.components.IntimoGenderField
 import com.intimocoffee.loyalty.ui.components.IntimoOutlinedField
 import com.intimocoffee.loyalty.ui.components.IntimoPrimaryButton
 import com.intimocoffee.loyalty.ui.components.IntimoWarmBackground
@@ -59,7 +60,7 @@ fun LoginScreen(
                 viewModel.dismissSetPassword()
             },
             containerColor = IntimoColors.CardBackground,
-            title = { Text("Crear contraseña", color = IntimoColors.Cream) },
+            title = { Text("Crear contraseña") },
             text = {
                 Column {
                     Text(
@@ -196,10 +197,13 @@ fun RegisterScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var name by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var birthDate by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("") }
     var validationError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState.isSuccess) {
@@ -232,12 +236,14 @@ fun RegisterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    "Acumula puntos en cada visita ☕",
+                    "Crea tu cuenta y empieza a sumar puntos",
                     style = MaterialTheme.typography.bodyMedium,
                     color = IntimoColors.SubtleText,
                     modifier = Modifier.padding(bottom = 20.dp),
                 )
-                IntimoOutlinedField(label = "Nombre completo", value = name, onValueChange = { name = it })
+                IntimoOutlinedField(label = "Nombre", value = name, onValueChange = { name = it })
+                Spacer(Modifier.height(12.dp))
+                IntimoOutlinedField(label = "Apellido", value = lastName, onValueChange = { lastName = it })
                 Spacer(Modifier.height(12.dp))
                 IntimoOutlinedField(
                     label = "Teléfono",
@@ -252,6 +258,15 @@ fun RegisterScreen(
                     onValueChange = { email = it },
                     keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
                 )
+                Spacer(Modifier.height(12.dp))
+                IntimoOutlinedField(
+                    label = "Fecha de nacimiento (opcional)",
+                    value = birthDate,
+                    onValueChange = { birthDate = it },
+                    placeholder = "YYYY-MM-DD",
+                )
+                Spacer(Modifier.height(12.dp))
+                IntimoGenderField(value = gender, onValueChange = { gender = it })
                 Spacer(Modifier.height(12.dp))
                 IntimoOutlinedField(
                     label = "Contraseña",
@@ -273,10 +288,20 @@ fun RegisterScreen(
                         validationError = when {
                             password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
                             password != confirmPassword -> "Las contraseñas no coinciden"
+                            birthDate.isNotBlank() && !birthDate.matches(Regex("^\\d{4}-\\d{2}-\\d{2}$")) ->
+                                "La fecha de nacimiento debe ser YYYY-MM-DD"
                             else -> null
                         }
                         if (validationError == null) {
-                            viewModel.register(name, phone, password, email.ifBlank { null })
+                            viewModel.register(
+                                name = name,
+                                lastName = lastName,
+                                phone = phone,
+                                password = password,
+                                email = email.ifBlank { null },
+                                birthDate = birthDate.ifBlank { null },
+                                gender = gender,
+                            )
                         }
                     },
                     enabled = name.isNotBlank() && phone.isNotBlank() && password.isNotBlank() &&

@@ -25,6 +25,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -57,13 +60,16 @@ data class DashboardUiState(
     val totalVisits: Int = 0,
     val currentMonthVisits: Int = 0,
     val availableRewards: Int = 0,
+    val promos: List<LoyaltyPromoResponse> = emptyList(),
     val recentTransactions: List<TransactionResponse> = emptyList(),
+    val message: String? = null,
     val error: String? = null
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val apiService: LoyaltyApiService,
+    private val contabilidadApi: ContabilidadApiService,
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
     
@@ -140,9 +146,27 @@ class DashboardViewModel @Inject constructor(
                 val allTransactions = allTxResponse.body()?.data ?: emptyList()
                 val rewards = rewardsResponse.body()?.data ?: emptyList()
                 val currentPoints = points.totalPoints
+
+                val promos = try {
+                    val promosResponse = contabilidadApi.getLoyaltyPromos()
+                    if (promosResponse.isSuccessful && promosResponse.body()?.success == true) {
+                        promosResponse.body()?.data.orEmpty()
+                    } else {
+                        emptyList()
+                    }
+                } catch (_: Exception) {
+                    emptyList()
+                }
                 
-                // Canjeables: solo rewards con costo > 0 que el cliente puede pagar
-                val redeemable = rewards.count { it.pointsCost > 0 && it.pointsCost <= currentPoints }
+                // Canjeables: rewards y promos con puntos suficientes
+                val redeemableRewardIds = (
+                    rewards.filter { it.pointsCost > 0 && it.pointsCost <= currentPoints }.map { it.id } +
+                        promos.filter {
+                            it.isRedeemable && it.rewardId != null &&
+                                (it.pointsCost <= 0 || it.pointsCost <= currentPoints)
+                        }.mapNotNull { it.rewardId }
+                ).distinct()
+                val redeemable = redeemableRewardIds.size
                 
                 // Visitas: usar max entre totalVisits del servidor y transacciones EARN
                 val earnCount = allTransactions.count { it.type == "EARN" }
@@ -159,6 +183,7 @@ class DashboardViewModel @Inject constructor(
                     totalVisits = visits,
                     currentMonthVisits = maxOf(customer?.currentMonthVisits ?: 0, earnCount),
                     availableRewards = redeemable,
+                    promos = promos,
                     recentTransactions = earnVisits
                 )
             } catch (e: Exception) {
@@ -169,6 +194,31 @@ class DashboardViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun redeemPromo(rewardId: Long) {
+        viewModelScope.launch {
+            try {
+                val customerId = sessionDataStore.customerId.first() ?: return@launch
+                val response = apiService.redeemReward(RedeemRequest(customerId, rewardId))
+                if (response.isSuccessful && response.body()?.success == true) {
+                    _uiState.value = _uiState.value.copy(
+                        message = response.body()?.data ?: "¡Cupón listo! Muéstralo en caja."
+                    )
+                    loadDashboard(isPullRefresh = true)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        message = response.body()?.message ?: "No se pudo canjear"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(message = e.message ?: "Error al canjear")
+            }
+        }
+    }
+
+    fun clearMessage() {
+        _uiState.value = _uiState.value.copy(message = null)
     }
 }
 
@@ -184,6 +234,20 @@ private fun formatVisitDate(iso: String): String {
     }
 }
 
+private fun promoDisplayCta(promo: LoyaltyPromoResponse, currentPoints: Int): String {
+    if (promo.isRedeemable && promo.rewardId != null) {
+        if (promo.pointsCost > 0) {
+            return if (currentPoints >= promo.pointsCost) {
+                "Canjear ${promo.pointsCost} pts"
+            } else {
+                "${promo.pointsCost} pts"
+            }
+        }
+        return promo.ctaLabel.ifBlank { "Obtener cupón" }
+    }
+    return promo.ctaLabel.ifBlank { "Ver más" }
+}
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun DashboardScreen(
@@ -192,10 +256,22 @@ fun DashboardScreen(
     onOpenSettings: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     val pullRefreshState = rememberPullRefreshState(
         refreshing = state.isRefreshing,
         onRefresh = { viewModel.loadDashboard(isPullRefresh = true) }
     )
+
+    state.message?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { viewModel.clearMessage() },
+            title = { Text("Aviso") },
+            text = { Text(msg) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearMessage() }) { Text("OK") }
+            }
+        )
+    }
 
     if (state.isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -237,9 +313,7 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
-                            Spacer(Modifier.width(8.dp))
-                            Text("☕", fontSize = 28.sp)
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(10.dp))
                             Text(
                                 "Puntos",
                                 style = MaterialTheme.typography.titleMedium,
@@ -256,8 +330,6 @@ fun DashboardScreen(
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("☕", fontSize = 14.sp)
-                                Spacer(Modifier.width(6.dp))
                                 Text("Premios", fontWeight = FontWeight.SemiBold, color = IntimoColors.Espresso)
                                 if (state.availableRewards > 0) {
                                     Spacer(Modifier.width(6.dp))
@@ -305,23 +377,23 @@ fun DashboardScreen(
                 }
             }
 
-            item {
+            items(state.promos, key = { it.id }) { promo ->
                 IntimoPromoCard(
-                    title = "Tu ritual, recompensado",
-                    subtitle = "Acumula puntos en cada visita a Íntimo",
-                    cta = "Ver premios",
-                    gradient = listOf(Color(0xFF5C4030), Color(0xFF3D2817)),
-                    onClick = onOpenCanjeables,
-                )
-            }
-
-            item {
-                IntimoPromoCard(
-                    title = "Ven por tu próxima taza",
-                    subtitle = "Café de especialidad, servido con calma",
-                    cta = "Explorar",
-                    gradient = listOf(Color(0xFFC9A66B), Color(0xFF8B6914)),
-                    onClick = onOpenCanjeables,
+                    title = promo.title,
+                    subtitle = promo.subtitle,
+                    cta = promoDisplayCta(promo, state.totalPoints),
+                    imageUrl = promo.imageUrl.takeIf { it.isNotBlank() },
+                    onClick = {
+                        when {
+                            promo.isRedeemable && promo.rewardId != null -> viewModel.redeemPromo(promo.rewardId)
+                            promo.linkUrl.trim().isNotBlank() -> {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(promo.linkUrl.trim()))
+                                )
+                            }
+                            else -> onOpenCanjeables()
+                        }
+                    },
                 )
             }
 
@@ -338,7 +410,7 @@ fun DashboardScreen(
                 item {
                     IntimoElevatedCard {
                         Text(
-                            "Aún no hay visitas — tu primera taza suma puntos ☕",
+                            "Aún no hay visitas — tu primera taza suma puntos",
                             color = IntimoColors.SubtleText,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
@@ -411,8 +483,6 @@ private fun TierBadge(tier: String) {
         color = tierColor.copy(alpha = 0.2f)
     ) {
         Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("👑", fontSize = 14.sp)
-            Spacer(Modifier.width(4.dp))
             Text(tierName, fontWeight = FontWeight.Bold, color = tierColor, fontSize = 13.sp)
         }
     }

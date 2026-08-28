@@ -116,7 +116,6 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                 shape = RoundedCornerShape(16.dp),
             ) {
                 IntimoEmptyState(
-                    emoji = "☕",
                     title = "Aún no hay movimientos",
                     subtitle = "Tu primera visita aparecerá aquí con los puntos que ganaste.",
                 )

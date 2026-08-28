@@ -23,6 +23,7 @@ import com.intimocoffee.loyalty.core.network.CustomerResponse
 import com.intimocoffee.loyalty.core.network.LoyaltyApiService
 import com.intimocoffee.loyalty.core.network.UpdateCustomerRequest
 import com.intimocoffee.loyalty.ui.components.IntimoAvatar
+import com.intimocoffee.loyalty.ui.components.IntimoGenderField
 import com.intimocoffee.loyalty.ui.components.IntimoOutlinedField
 import com.intimocoffee.loyalty.ui.components.IntimoPrimaryButton
 import com.intimocoffee.loyalty.ui.components.IntimoScreenHeader
@@ -106,8 +107,12 @@ class SettingsViewModel @Inject constructor(
                 val response = apiService.updateCustomer(customerId, request)
                 if (response.isSuccessful && response.body()?.success == true) {
                     val updated = response.body()!!.data!!
-                    sessionDataStore.saveSession(updated.id, updated.name, updated.phone)
-                    _uiState.value = _uiState.value.copy(isSaving = false, customer = updated, message = "✓ Perfil actualizado")
+                    val displayName = listOf(updated.name.orEmpty(), updated.lastName.orEmpty())
+                        .filter { it.isNotBlank() }
+                        .joinToString(" ")
+                        .ifBlank { updated.name }
+                    sessionDataStore.saveSession(updated.id, displayName, updated.phone)
+                    _uiState.value = _uiState.value.copy(isSaving = false, customer = updated, message = "Perfil actualizado")
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,
@@ -140,15 +145,6 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
     var allergies by remember(state.customer) { mutableStateOf(state.customer?.allergies ?: "") }
     var gender by remember(state.customer) { mutableStateOf(state.customer?.gender ?: "") }
 
-    val genderOptions = listOf(
-        "" to "Sin especificar",
-        "MALE" to "Masculino",
-        "FEMALE" to "Femenino",
-        "OTHER" to "Otro",
-        "PREFER_NOT_SAY" to "Prefiero no decir"
-    )
-    val selectedGenderLabel = genderOptions.find { it.first == gender }?.second ?: "Sin especificar"
-
     if (state.message != null) {
         AlertDialog(
             onDismissRequest = { viewModel.clearMessage() },
@@ -162,7 +158,7 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
 
     if (state.isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Color.White)
+            CircularProgressIndicator(color = IntimoColors.Espresso)
         }
         return
     }
@@ -182,7 +178,13 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(8.dp))
-        val initials = name.trim().split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
+        val initials = listOf(name.trim(), lastName.trim())
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .split(" ")
+            .mapNotNull { it.firstOrNull()?.toString() }
+            .take(2)
+            .joinToString("")
             .ifBlank { "IC" }
         IntimoAvatar(initials = initials)
         Spacer(Modifier.height(12.dp))
@@ -195,50 +197,40 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = IntimoColors.CardBackground),
-            shape = RoundedCornerShape(16.dp)
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Person, null, tint = Color.White)
+                    Icon(Icons.Default.Person, null, tint = IntimoColors.Espresso)
                     Spacer(Modifier.width(8.dp))
-                    Text("Información Personal", fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text(
+                        "Información personal",
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
                 Spacer(Modifier.height(16.dp))
                 IntimoOutlinedField(label = "Nombre", value = name, onValueChange = { name = it })
                 Spacer(Modifier.height(10.dp))
                 IntimoOutlinedField(label = "Apellido", value = lastName, onValueChange = { lastName = it })
                 Spacer(Modifier.height(10.dp))
-                IntimoOutlinedField(label = "Email", value = email, onValueChange = { email = it }, keyboardType = KeyboardType.Email)
+                IntimoOutlinedField(
+                    label = "Email",
+                    value = email,
+                    onValueChange = { email = it },
+                    keyboardType = KeyboardType.Email,
+                )
                 Spacer(Modifier.height(10.dp))
-                IntimoOutlinedField(label = "Fecha de nacimiento (YYYY-MM-DD)", value = birthDate, onValueChange = { birthDate = it })
+                IntimoOutlinedField(
+                    label = "Fecha de nacimiento",
+                    value = birthDate,
+                    onValueChange = { birthDate = it },
+                    placeholder = "YYYY-MM-DD",
+                )
                 Spacer(Modifier.height(10.dp))
-                Text("Género", color = IntimoColors.SubtleText, style = MaterialTheme.typography.labelSmall)
-                Spacer(Modifier.height(6.dp))
-                var genderExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(expanded = genderExpanded, onExpandedChange = { genderExpanded = it }) {
-                    OutlinedTextField(
-                        value = selectedGenderLabel,
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.White,
-                            unfocusedBorderColor = IntimoColors.BorderMuted,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                        )
-                    )
-                    ExposedDropdownMenu(expanded = genderExpanded, onDismissRequest = { genderExpanded = false }) {
-                        genderOptions.forEach { (value, label) ->
-                            DropdownMenuItem(
-                                text = { Text(label) },
-                                onClick = { gender = value; genderExpanded = false }
-                            )
-                        }
-                    }
-                }
+                IntimoGenderField(value = gender, onValueChange = { gender = it })
             }
         }
 
@@ -246,14 +238,19 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = IntimoColors.CardBackground),
-            shape = RoundedCornerShape(16.dp)
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Coffee, null, tint = Color.White)
+                    Icon(Icons.Default.Coffee, null, tint = IntimoColors.Espresso)
                     Spacer(Modifier.width(8.dp))
-                    Text("Preferencias", fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text(
+                        "Preferencias",
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
                 Spacer(Modifier.height(16.dp))
                 IntimoOutlinedField(label = "Bebida favorita", value = favoriteDrink, onValueChange = { favoriteDrink = it })

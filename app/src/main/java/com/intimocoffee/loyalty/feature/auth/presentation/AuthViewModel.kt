@@ -103,17 +103,37 @@ class AuthViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(needsSetPassword = false)
     }
 
-    fun register(name: String, phone: String, password: String, email: String?) {
+    fun register(
+        name: String,
+        lastName: String,
+        phone: String,
+        password: String,
+        email: String?,
+        birthDate: String?,
+        gender: String?,
+    ) {
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             try {
                 val normalized = phone.filter { it.isDigit() }.let { if (it.length >= 10) it.takeLast(10) else it }
                 val response = apiService.register(
-                    RegisterRequest(name.trim(), normalized, password, email?.trim()?.ifBlank { null })
+                    RegisterRequest(
+                        name = name.trim(),
+                        phone = normalized,
+                        password = password,
+                        email = email?.trim()?.ifBlank { null },
+                        lastName = lastName.trim().ifBlank { null },
+                        birthDate = birthDate?.trim()?.ifBlank { null },
+                        gender = gender?.ifBlank { null },
+                    )
                 )
                 if (response.isSuccessful && response.body()?.success == true) {
                     val customer = response.body()!!.data!!
-                    sessionDataStore.saveSession(customer.id, customer.name, customer.phone)
+                    val displayName = listOf(customer.name.orEmpty(), customer.lastName.orEmpty())
+                        .filter { it.isNotBlank() }
+                        .joinToString(" ")
+                        .ifBlank { customer.name }
+                    sessionDataStore.saveSession(customer.id, displayName, customer.phone)
                     _uiState.value = AuthUiState(isSuccess = true)
                 } else {
                     _uiState.value = AuthUiState(

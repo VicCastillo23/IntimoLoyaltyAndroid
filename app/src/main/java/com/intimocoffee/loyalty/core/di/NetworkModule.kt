@@ -3,6 +3,7 @@ package com.intimocoffee.loyalty.core.di
 import android.content.Context
 import com.intimocoffee.loyalty.BuildConfig
 import com.intimocoffee.loyalty.core.datastore.SessionDataStore
+import com.intimocoffee.loyalty.core.network.ContabilidadApiService
 import com.intimocoffee.loyalty.core.network.LoyaltyApiService
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -66,6 +67,19 @@ object NetworkModule {
     @Singleton
     fun provideLoyaltyApiService(retrofitProvider: RetrofitProvider): LoyaltyApiService {
         return retrofitProvider.getApiService()
+    }
+
+    @Provides
+    @Singleton
+    fun provideContabilidadApiService(client: OkHttpClient, jsonInstance: Json): ContabilidadApiService {
+        val configured = BuildConfig.CONTABILIDAD_BASE_URL.trim()
+        val baseUrl = if (configured.endsWith("/")) configured else "$configured/"
+        val retrofit = Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(client)
+            .addConverterFactory(jsonInstance.asConverterFactory("application/json".toMediaType()))
+            .build()
+        return retrofit.create(ContabilidadApiService::class.java)
     }
 }
 

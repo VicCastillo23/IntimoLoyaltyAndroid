@@ -39,6 +39,9 @@ interface LoyaltyApiService {
     
     @POST("/loyalty/redeem")
     suspend fun redeemReward(@Body request: RedeemRequest): Response<ApiResponse<String>>
+
+    @POST("/loyalty/coupon-code/redeem")
+    suspend fun redeemCouponCode(@Body request: PointCouponCodeRedeemRequest): Response<ApiResponse<String>>
     
     @GET("/loyalty/qrcode/{customerId}")
     suspend fun getQRCode(@Path("customerId") customerId: Long): Response<ApiResponse<QRCodeResponse>>
@@ -53,7 +56,10 @@ data class RegisterRequest(
     val name: String,
     val phone: String,
     val password: String,
-    val email: String? = null
+    val email: String? = null,
+    val lastName: String? = null,
+    val birthDate: String? = null,
+    val gender: String? = null,
 )
 
 @Serializable
@@ -68,6 +74,9 @@ data class SetPasswordRequest(
 
 @Serializable
 data class RedeemRequest(val customerId: Long, val rewardId: Long)
+
+@Serializable
+data class PointCouponCodeRedeemRequest(val customerId: Long, val code: String)
 
 @Serializable
 data class UpdateCustomerRequest(
