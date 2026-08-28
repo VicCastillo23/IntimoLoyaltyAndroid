@@ -85,7 +85,7 @@ fun QRCodeScreen(viewModel: QRCodeViewModel = hiltViewModel()) {
             "Tu código QR",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.SemiBold,
-            color = IntimoColors.Cream,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(Modifier.height(8.dp))
         Text(
@@ -136,7 +136,7 @@ fun QRCodeScreen(viewModel: QRCodeViewModel = hiltViewModel()) {
             name,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
-            color = IntimoColors.Cream,
+            color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
             IntimoAppInfo.brandName,

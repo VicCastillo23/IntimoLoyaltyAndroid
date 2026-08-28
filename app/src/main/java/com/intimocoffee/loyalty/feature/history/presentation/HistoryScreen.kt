@@ -112,7 +112,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
         } else if (transactions.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = IntimoColors.CardBackground),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp),
             ) {
                 IntimoEmptyState(
@@ -133,7 +133,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                         val points = if (isEarn) tx.pointsEarned else tx.pointsRedeemed
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = IntimoColors.CardBackground),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
                             shape = RoundedCornerShape(14.dp)
                         ) {
                             Row(
@@ -167,7 +167,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                                 }
                                 Spacer(Modifier.width(14.dp))
                                 Column(Modifier.weight(1f)) {
-                                    Text(title, fontWeight = FontWeight.SemiBold, color = IntimoColors.Cream)
+                                    Text(title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                                     Text(
                                         formatTxDate(tx.createdAt),
                                         style = MaterialTheme.typography.bodySmall,

@@ -10,50 +10,53 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.intimocoffee.loyalty.BuildConfig
 
-// Íntimo Coffee — paleta cálida editorial (crema, caramelo, espresso)
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFC9A66B),
-    onPrimary = Color(0xFF2A1810),
-    primaryContainer = Color(0xFF3D2A1E),
-    onPrimaryContainer = Color(0xFFE8D5C4),
-    secondary = Color(0xFFE8D5C4),
-    onSecondary = Color(0xFF1A120E),
-    secondaryContainer = Color(0xFF2A2018),
-    onSecondaryContainer = Color(0xFFD4C4B0),
-    tertiary = Color(0xFF8B7355),
-    background = Color(0xFF0D0B0A),
-    onBackground = Color(0xFFF0E6DC),
-    surface = Color(0xFF1A1614),
-    onSurface = Color(0xFFF0E6DC),
-    surfaceVariant = Color(0xFF252019),
-    onSurfaceVariant = Color(0xFF9A9088),
-    outline = Color(0xFF4A4038),
-    error = Color(0xFFE57373),
-    onError = Color(0xFF1A120E),
+// Íntimo — tema claro luminoso (referencia: apps de lealtad premium)
+private val LightColorScheme = lightColorScheme(
+    primary = Color(0xFF3D2817),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFF0E6DC),
+    onPrimaryContainer = Color(0xFF3D2817),
+    secondary = Color(0xFFC9A66B),
+    onSecondary = Color(0xFF2A1810),
+    secondaryContainer = Color(0xFFFFF8F0),
+    onSecondaryContainer = Color(0xFF5C4A38),
+    tertiary = Color(0xFFD4AF37),
+    background = Color(0xFFF7F3EE),
+    onBackground = Color(0xFF1A120E),
+    surface = Color.White,
+    onSurface = Color(0xFF1A120E),
+    surfaceVariant = Color(0xFFF0EBE4),
+    onSurfaceVariant = Color(0xFF6B5E54),
+    outline = Color(0xFFD8D0C8),
+    error = Color(0xFFC62828),
+    onError = Color.White,
 )
 
 object IntimoColors {
-    val Background = Color(0xFF0D0B0A)
-    val Cream = Color(0xFFE8D5C4)
+    val Background = Color(0xFFF7F3EE)
+    val Cream = Color(0xFF1A120E)
     val Caramel = Color(0xFFC9A66B)
     val CaramelDark = Color(0xFFA8844F)
-    val Espresso = Color(0xFF2A1810)
-    val CardBackground = Color(0xFF1A1614)
-    val CardBackgroundElevated = Color(0xFF221C18)
-    val Accent = Color(0xFFE8D5C4)
-    val SubtleText = Color(0xFF8A8078)
-    val Divider = Color(0xFF3A322C)
-    val BorderMuted = Color(0xFF4A4038)
-    val TabBar = Color(0xFF141110)
-    val ChipBg = Color(0xFF2A221C)
-    val GradientStart = Color(0xFF3D2A1E)
-    val GradientEnd = Color(0xFF1A120E)
-    val ProgressTrack = Color(0xFF3A322C)
-    val Green = Color(0xFF81C784)
-    val Red = Color(0xFFE57373)
+    val Espresso = Color(0xFF3D2817)
+    val EspressoSoft = Color(0xFF5C4030)
+    val CardBackground = Color.White
+    val CardBackgroundElevated = Color(0xFFFAFAF8)
+    val Accent = Color(0xFFC9A66B)
+    val SubtleText = Color(0xFF7A6E64)
+    val Divider = Color(0xFFE8E0D8)
+    val BorderMuted = Color(0xFFD8D0C8)
+    val TabBar = Color.White
+    val ChipBg = Color(0xFFF0EBE4)
+    val GradientStart = Color(0xFF4A3728)
+    val GradientEnd = Color(0xFF2A1810)
+    val ProgressTrack = Color(0xFFE8E0D8)
+    val ProgressGold = Color(0xFFD4AF37)
+    val Green = Color(0xFF2E7D32)
+    val Red = Color(0xFFC62828)
     val Gold = Color(0xFFD4AF37)
-    val Silver = Color(0xFFB8B8B8)
+    val Silver = Color(0xFF9E9E9E)
     val Bronze = Color(0xFFCD7F32)
+    val ScanFab = Color(0xFF3D2817)
 }
 
 object IntimoAppInfo {
@@ -64,13 +67,13 @@ object IntimoAppInfo {
 
 @Composable
 fun IntimoCoffeeLoyaltyTheme(content: @Composable () -> Unit) {
-    val colorScheme = DarkColorScheme
+    val colorScheme = LightColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = IntimoColors.Background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
         }
     }
     MaterialTheme(

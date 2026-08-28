@@ -130,7 +130,7 @@ fun LoginScreen(
             Text(
                 "Íntimo Coffee",
                 style = MaterialTheme.typography.headlineLarge,
-                color = IntimoColors.Cream,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 "Donde el café se vuelve ritual",
@@ -169,7 +169,7 @@ fun LoginScreen(
             )
             Spacer(Modifier.height(12.dp))
             TextButton(onClick = onNavigateToRegister) {
-                Text("¿No tienes cuenta? Regístrate", color = IntimoColors.Caramel)
+                Text("¿No tienes cuenta? Regístrate", color = IntimoColors.Espresso)
             }
             Spacer(Modifier.height(8.dp))
             Text(
@@ -210,11 +210,11 @@ fun RegisterScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Únete a Íntimo", color = IntimoColors.Cream, fontWeight = FontWeight.SemiBold)
+                    Text("Únete a Íntimo", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold)
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Volver", tint = IntimoColors.Cream)
+                        Icon(Icons.Default.ArrowBack, "Volver", tint = IntimoColors.Espresso)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),

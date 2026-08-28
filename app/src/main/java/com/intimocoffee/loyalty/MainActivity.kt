@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
@@ -67,7 +66,7 @@ class MainActivity : ComponentActivity() {
                 )
 
                 LaunchedEffect(Unit) {
-                    delay(1400)
+                    delay(1200)
                     showSplash = false
                 }
 
@@ -86,34 +85,14 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .alpha(splashAlpha)
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(Color(0xFF0D0B0A), Color(0xFF1A120E))
-                                    )
-                                ),
+                                .background(IntimoColors.Background),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(240.dp)
-                                    .background(
-                                        Brush.radialGradient(
-                                            listOf(
-                                                IntimoColors.Caramel.copy(alpha = 0.25f),
-                                                Color.Transparent,
-                                            ),
-                                        ),
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.splash_logo),
-                                    contentDescription = "Íntimo Coffee",
-                                    modifier = Modifier
-                                        .padding(horizontal = 40.dp)
-                                        .size(160.dp),
-                                )
-                            }
+                            Image(
+                                painter = painterResource(id = R.drawable.splash_logo),
+                                contentDescription = "Íntimo Coffee",
+                                modifier = Modifier.size(140.dp),
+                            )
                         }
                     }
                 }
@@ -156,6 +135,9 @@ fun LoyaltyApp(startLoggedIn: Boolean) {
 fun MainScreen(onLogout: () -> Unit) {
     val innerNavController = rememberNavController()
     var rewardsPendingCategory by remember { mutableStateOf<String?>(null) }
+    val navBackStackEntry by innerNavController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
     val bottomNavItems = listOf(
         BottomNavItem(BottomNavDestinations.DASHBOARD, "Inicio", Icons.Default.Home),
         BottomNavItem(BottomNavDestinations.REWARDS, "Premios", Icons.Default.CardGiftcard),
@@ -166,10 +148,23 @@ fun MainScreen(onLogout: () -> Unit) {
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        floatingActionButton = {
+            if (currentRoute == BottomNavDestinations.DASHBOARD) {
+                ExtendedFloatingActionButton(
+                    onClick = { navigateTab(innerNavController, BottomNavDestinations.QR_CODE) },
+                    icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
+                    text = { Text("Escanear") },
+                    containerColor = IntimoColors.ScanFab,
+                    contentColor = Color.White,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+            }
+        },
         bottomBar = {
             IntimoBottomBar(
                 items = bottomNavItems,
-                innerNavController = innerNavController,
+                currentRoute = currentRoute,
+                onNavigate = { navigateTab(innerNavController, it) },
             )
         },
     ) { padding ->
@@ -187,6 +182,11 @@ fun MainScreen(onLogout: () -> Unit) {
                                 popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
+                            }
+                        },
+                        onOpenSettings = {
+                            innerNavController.navigate(BottomNavDestinations.SETTINGS) {
+                                launchSingleTop = true
                             }
                         },
                     )
@@ -208,65 +208,29 @@ fun MainScreen(onLogout: () -> Unit) {
 @Composable
 private fun IntimoBottomBar(
     items: List<BottomNavItem>,
-    innerNavController: androidx.navigation.NavHostController,
+    currentRoute: String?,
+    onNavigate: (String) -> Unit,
 ) {
-    val navBackStackEntry by innerNavController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    val leftItems = items.take(2)
-    val qrItem = items[2]
-    val rightItems = items.takeLast(2)
-
     Surface(
         color = IntimoColors.TabBar,
-        shadowElevation = 16.dp,
-        tonalElevation = 4.dp,
+        shadowElevation = 12.dp,
+        tonalElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 4.dp, vertical = 6.dp),
+                .padding(horizontal = 4.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceEvenly) {
-                leftItems.forEach { item ->
-                    IntimoNavItem(
-                        label = item.label,
-                        icon = item.icon,
-                        selected = currentRoute == item.route,
-                        onClick = { navigateTab(innerNavController, item.route) },
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier.offset(y = (-10).dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                FloatingActionButton(
-                    onClick = { navigateTab(innerNavController, qrItem.route) },
-                    containerColor = IntimoColors.Caramel,
-                    contentColor = IntimoColors.Espresso,
-                    elevation = FloatingActionButtonDefaults.elevation(
-                        defaultElevation = 6.dp,
-                        pressedElevation = 10.dp,
-                    ),
-                    modifier = Modifier.size(58.dp),
-                ) {
-                    Icon(Icons.Default.QrCode2, contentDescription = qrItem.label, modifier = Modifier.size(28.dp))
-                }
-            }
-
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceEvenly) {
-                rightItems.forEach { item ->
-                    IntimoNavItem(
-                        label = item.label,
-                        icon = item.icon,
-                        selected = currentRoute == item.route,
-                        onClick = { navigateTab(innerNavController, item.route) },
-                    )
-                }
+            items.forEach { item ->
+                IntimoNavItem(
+                    label = item.label,
+                    icon = item.icon,
+                    selected = currentRoute == item.route,
+                    onClick = { onNavigate(item.route) },
+                )
             }
         }
     }
