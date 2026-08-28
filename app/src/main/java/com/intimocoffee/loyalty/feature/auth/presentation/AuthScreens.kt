@@ -1,22 +1,27 @@
 package com.intimocoffee.loyalty.feature.auth.presentation
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.intimocoffee.loyalty.R
 import com.intimocoffee.loyalty.ui.components.IntimoOutlinedField
+import com.intimocoffee.loyalty.ui.components.IntimoPrimaryButton
+import com.intimocoffee.loyalty.ui.components.IntimoWarmBackground
 import com.intimocoffee.loyalty.ui.theme.IntimoColors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,12 +58,14 @@ fun LoginScreen(
                 showSetPasswordDialog = false
                 viewModel.dismissSetPassword()
             },
-            title = { Text("Crear contraseña") },
+            containerColor = IntimoColors.CardBackground,
+            title = { Text("Crear contraseña", color = IntimoColors.Cream) },
             text = {
                 Column {
                     Text(
                         "Tu cuenta está sin contraseña. Elige una para poder iniciar sesión.",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = IntimoColors.SubtleText,
                     )
                     Spacer(Modifier.height(12.dp))
                     IntimoOutlinedField(
@@ -94,75 +101,89 @@ fun LoginScreen(
                             }
                         }
                     },
-                    enabled = !uiState.isLoading
-                ) { Text("Guardar") }
+                    enabled = !uiState.isLoading,
+                ) { Text("Guardar", color = IntimoColors.Caramel) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showSetPasswordDialog = false
                     viewModel.dismissSetPassword()
-                }) { Text("Cancelar") }
-            }
+                }) { Text("Cancelar", color = IntimoColors.SubtleText) }
+            },
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.weight(1f))
-        Icon(Icons.Default.Coffee, null, modifier = Modifier.size(80.dp), tint = Color.White)
-        Spacer(Modifier.height(16.dp))
-        Text("Intimo Coffee", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Color.White)
-        Text("Programa de Lealtad", style = MaterialTheme.typography.titleMedium, color = IntimoColors.SubtleText)
-        Spacer(Modifier.height(48.dp))
-
-        IntimoOutlinedField(
-            label = "Número de teléfono",
-            value = phone,
-            onValueChange = { phone = it },
-            keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone,
-        )
-        Spacer(Modifier.height(12.dp))
-        IntimoOutlinedField(
-            label = "Contraseña",
-            value = password,
-            onValueChange = { password = it },
-            isPassword = true,
-        )
-        Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = { viewModel.login(phone, password) },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            enabled = phone.trim().isNotBlank() && password.isNotBlank() && !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+    IntimoWarmBackground {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black, strokeWidth = 2.dp)
-            } else {
-                Text("Iniciar Sesión", fontWeight = FontWeight.Bold)
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        TextButton(onClick = onNavigateToRegister) {
-            Text("¿No tienes cuenta? Regístrate", color = IntimoColors.SubtleText)
-        }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "¿Olvidaste tu contraseña? Contáctanos en cafeintimo@gmail.com o en el café.",
-            style = MaterialTheme.typography.bodySmall,
-            color = IntimoColors.SubtleText,
-            textAlign = TextAlign.Center
-        )
-        uiState.errorMessage?.let { error ->
+            Spacer(Modifier.weight(0.8f))
+            Image(
+                painter = painterResource(id = R.drawable.splash_logo),
+                contentDescription = "Íntimo Coffee",
+                modifier = Modifier.size(120.dp),
+            )
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "Íntimo Coffee",
+                style = MaterialTheme.typography.headlineLarge,
+                color = IntimoColors.Cream,
+            )
+            Text(
+                "Donde el café se vuelve ritual",
+                style = MaterialTheme.typography.bodyMedium,
+                color = IntimoColors.SubtleText,
+            )
             Spacer(Modifier.height(8.dp))
-            Text(error, color = IntimoColors.Red, textAlign = TextAlign.Center)
+            Text(
+                "Programa de lealtad",
+                style = MaterialTheme.typography.labelLarge,
+                color = IntimoColors.Caramel,
+                letterSpacing = 1.sp,
+            )
+            Spacer(Modifier.height(40.dp))
+
+            IntimoOutlinedField(
+                label = "Número de teléfono",
+                value = phone,
+                onValueChange = { phone = it },
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone,
+            )
+            Spacer(Modifier.height(12.dp))
+            IntimoOutlinedField(
+                label = "Contraseña",
+                value = password,
+                onValueChange = { password = it },
+                isPassword = true,
+            )
+            Spacer(Modifier.height(20.dp))
+
+            IntimoPrimaryButton(
+                text = "Iniciar sesión",
+                onClick = { viewModel.login(phone, password) },
+                enabled = phone.trim().isNotBlank() && password.isNotBlank(),
+                loading = uiState.isLoading,
+            )
+            Spacer(Modifier.height(12.dp))
+            TextButton(onClick = onNavigateToRegister) {
+                Text("¿No tienes cuenta? Regístrate", color = IntimoColors.Caramel)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "¿Olvidaste tu contraseña? Escríbenos a cafeintimo@gmail.com o en el café.",
+                style = MaterialTheme.typography.bodySmall,
+                color = IntimoColors.SubtleText,
+                textAlign = TextAlign.Center,
+            )
+            uiState.errorMessage?.let { error ->
+                Spacer(Modifier.height(8.dp))
+                Text(error, color = IntimoColors.Red, textAlign = TextAlign.Center)
+            }
+            Spacer(Modifier.weight(1f))
         }
-        Spacer(Modifier.weight(1f))
     }
 }
 
@@ -188,81 +209,84 @@ fun RegisterScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Registro", color = Color.White) },
+                title = {
+                    Text("Únete a Íntimo", color = IntimoColors.Cream, fontWeight = FontWeight.SemiBold)
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Volver", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, "Volver", tint = IntimoColors.Cream)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF121212))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             )
         },
-        containerColor = Color(0xFF121212)
+        containerColor = IntimoColors.Background,
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            IntimoOutlinedField(label = "Nombre completo", value = name, onValueChange = { name = it })
-            Spacer(Modifier.height(12.dp))
-            IntimoOutlinedField(
-                label = "Teléfono",
-                value = phone,
-                onValueChange = { phone = it },
-                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone,
-            )
-            Spacer(Modifier.height(12.dp))
-            IntimoOutlinedField(
-                label = "Email (opcional)",
-                value = email,
-                onValueChange = { email = it },
-                keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
-            )
-            Spacer(Modifier.height(12.dp))
-            IntimoOutlinedField(
-                label = "Contraseña",
-                value = password,
-                onValueChange = { password = it; validationError = null },
-                isPassword = true,
-            )
-            Spacer(Modifier.height(12.dp))
-            IntimoOutlinedField(
-                label = "Confirmar contraseña",
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it; validationError = null },
-                isPassword = true,
-            )
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = {
-                    validationError = when {
-                        password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
-                        password != confirmPassword -> "Las contraseñas no coinciden"
-                        else -> null
-                    }
-                    if (validationError == null) {
-                        viewModel.register(name, phone, password, email.ifBlank { null })
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                enabled = name.isNotBlank() && phone.isNotBlank() && password.isNotBlank() &&
-                    confirmPassword.isNotBlank() && !uiState.isLoading,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+        IntimoWarmBackground {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black, strokeWidth = 2.dp)
-                } else {
-                    Text("Registrarse", fontWeight = FontWeight.Bold)
+                Text(
+                    "Acumula puntos en cada visita ☕",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = IntimoColors.SubtleText,
+                    modifier = Modifier.padding(bottom = 20.dp),
+                )
+                IntimoOutlinedField(label = "Nombre completo", value = name, onValueChange = { name = it })
+                Spacer(Modifier.height(12.dp))
+                IntimoOutlinedField(
+                    label = "Teléfono",
+                    value = phone,
+                    onValueChange = { phone = it },
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone,
+                )
+                Spacer(Modifier.height(12.dp))
+                IntimoOutlinedField(
+                    label = "Email (opcional)",
+                    value = email,
+                    onValueChange = { email = it },
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
+                )
+                Spacer(Modifier.height(12.dp))
+                IntimoOutlinedField(
+                    label = "Contraseña",
+                    value = password,
+                    onValueChange = { password = it; validationError = null },
+                    isPassword = true,
+                )
+                Spacer(Modifier.height(12.dp))
+                IntimoOutlinedField(
+                    label = "Confirmar contraseña",
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it; validationError = null },
+                    isPassword = true,
+                )
+                Spacer(Modifier.height(20.dp))
+                IntimoPrimaryButton(
+                    text = "Crear cuenta",
+                    onClick = {
+                        validationError = when {
+                            password.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+                            password != confirmPassword -> "Las contraseñas no coinciden"
+                            else -> null
+                        }
+                        if (validationError == null) {
+                            viewModel.register(name, phone, password, email.ifBlank { null })
+                        }
+                    },
+                    enabled = name.isNotBlank() && phone.isNotBlank() && password.isNotBlank() &&
+                        confirmPassword.isNotBlank(),
+                    loading = uiState.isLoading,
+                )
+                (validationError ?: uiState.errorMessage)?.let { error ->
+                    Spacer(Modifier.height(8.dp))
+                    Text(error, color = IntimoColors.Red, textAlign = TextAlign.Center)
                 }
-            }
-            (validationError ?: uiState.errorMessage)?.let { error ->
-                Spacer(Modifier.height(8.dp))
-                Text(error, color = IntimoColors.Red, textAlign = TextAlign.Center)
             }
         }
     }

@@ -214,11 +214,11 @@ fun DashboardScreen(
             Text(
                 "¡Hola, ${state.customerName}!",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                fontWeight = FontWeight.SemiBold,
+                color = IntimoColors.Cream
             )
             Text(
-                "Bienvenido a Intimo Coffee",
+                "Tu ritual de café, recompensado",
                 style = MaterialTheme.typography.bodyMedium,
                 color = IntimoColors.SubtleText
             )
@@ -236,7 +236,11 @@ fun DashboardScreen(
                         .fillMaxWidth()
                         .background(
                             brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF2A2A2A), Color(0xFF1A1A1A))
+                                colors = listOf(
+                                    IntimoColors.GradientStart,
+                                    IntimoColors.GradientEnd,
+                                    IntimoColors.Background,
+                                )
                             ),
                             shape = RoundedCornerShape(20.dp)
                         )
@@ -249,12 +253,12 @@ fun DashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Tus Puntos", style = MaterialTheme.typography.bodyMedium, color = IntimoColors.SubtleText)
+                                Text("Tus puntos", style = MaterialTheme.typography.bodyMedium, color = IntimoColors.SubtleText)
                                 Text(
                                     "${state.totalPoints}",
                                     style = MaterialTheme.typography.displayMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    fontWeight = FontWeight.Normal,
+                                    color = IntimoColors.Cream
                                 )
                             }
                             TierBadge(tier = state.tier)
@@ -420,7 +424,7 @@ private fun TierProgressBar(tier: String, lifetimePoints: Int) {
             progress = progress,
             modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
             color = Color.White,
-            trackColor = Color(0xFF3A3A3A)
+            trackColor = IntimoColors.ProgressTrack
         )
     }
 }
@@ -444,9 +448,9 @@ private fun QuickStatCard(
             modifier = Modifier.padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+            Icon(icon, contentDescription = null, tint = IntimoColors.Caramel, modifier = Modifier.size(22.dp))
             Spacer(Modifier.height(6.dp))
-            Text(value, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 20.sp)
+            Text(value, fontWeight = FontWeight.Bold, color = IntimoColors.Cream, fontSize = 20.sp)
             Text(label, style = MaterialTheme.typography.bodySmall, color = IntimoColors.SubtleText)
         }
     }

@@ -3,8 +3,12 @@ package com.intimocoffee.loyalty.feature.history.presentation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -12,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,12 +26,18 @@ import androidx.lifecycle.viewModelScope
 import com.intimocoffee.loyalty.core.datastore.SessionDataStore
 import com.intimocoffee.loyalty.core.network.LoyaltyApiService
 import com.intimocoffee.loyalty.core.network.TransactionResponse
+import com.intimocoffee.loyalty.ui.components.IntimoEmptyState
+import com.intimocoffee.loyalty.ui.components.IntimoScreenHeader
 import com.intimocoffee.loyalty.ui.theme.IntimoColors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -64,6 +75,17 @@ class HistoryViewModel @Inject constructor(
     }
 }
 
+private val txDateFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("d MMM yyyy · HH:mm", Locale("es", "MX"))
+
+private fun formatTxDate(iso: String): String {
+    return try {
+        Instant.parse(iso).atZone(ZoneId.systemDefault()).format(txDateFormatter)
+    } catch (_: Exception) {
+        iso.take(16).replace("T", " ")
+    }
+}
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
@@ -77,46 +99,86 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.height(16.dp))
-        Text("Historial", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
-        Text("Compras y puntos", style = MaterialTheme.typography.bodyMedium, color = IntimoColors.SubtleText)
+        IntimoScreenHeader(
+            title = "Historial",
+            subtitle = "Compras, canjes y puntos",
+        )
         Spacer(Modifier.height(16.dp))
 
         if (isLoading && !isRefreshing) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color.White)
+                CircularProgressIndicator(color = IntimoColors.Caramel)
             }
         } else if (transactions.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Sin transacciones aún", style = MaterialTheme.typography.bodyLarge, color = IntimoColors.SubtleText)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = IntimoColors.CardBackground),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                IntimoEmptyState(
+                    emoji = "☕",
+                    title = "Aún no hay movimientos",
+                    subtitle = "Tu primera visita aparecerá aquí con los puntos que ganaste.",
+                )
             }
         } else {
             Box(Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     items(transactions) { tx ->
                         val isEarn = tx.type == "EARN"
-                        val title = if (isEarn) "Compra" else "Canje"
+                        val title = if (isEarn) "Compra en Íntimo" else "Canje de premio"
                         val points = if (isEarn) tx.pointsEarned else tx.pointsRedeemed
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = IntimoColors.CardBackground),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp, vertical = 14.dp)
                                     .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(title, fontWeight = FontWeight.Medium, color = Color.White)
+                                Box(
+                                    modifier = Modifier.size(44.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (isEarn) {
+                                            IntimoColors.Green.copy(alpha = 0.15f)
+                                        } else {
+                                            IntimoColors.Caramel.copy(alpha = 0.15f)
+                                        },
+                                        modifier = Modifier.fillMaxSize(),
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                if (isEarn) Icons.Default.ShoppingBag else Icons.Default.CardGiftcard,
+                                                contentDescription = null,
+                                                tint = if (isEarn) IntimoColors.Green else IntimoColors.Caramel,
+                                                modifier = Modifier.size(22.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.width(14.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(title, fontWeight = FontWeight.SemiBold, color = IntimoColors.Cream)
+                                    Text(
+                                        formatTxDate(tx.createdAt),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = IntimoColors.SubtleText,
+                                    )
+                                }
                                 Text(
-                                    if (isEarn) "+$points pts" else "-$points pts",
-                                    color = if (isEarn) IntimoColors.Green else IntimoColors.Red,
-                                    fontWeight = FontWeight.SemiBold,
-                                    style = MaterialTheme.typography.bodyLarge
+                                    if (isEarn) "+$points" else "−$points",
+                                    color = if (isEarn) IntimoColors.Green else IntimoColors.Caramel,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium,
                                 )
                             }
                         }
@@ -126,7 +188,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                     refreshing = isRefreshing,
                     state = pullRefreshState,
                     modifier = Modifier.align(Alignment.TopCenter),
-                    contentColor = Color.White,
+                    contentColor = IntimoColors.Caramel,
                     backgroundColor = IntimoColors.CardBackground
                 )
             }

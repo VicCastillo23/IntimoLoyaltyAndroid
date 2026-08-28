@@ -2,12 +2,16 @@ package com.intimocoffee.loyalty.feature.qrcode.presentation
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
@@ -45,7 +49,6 @@ class QRCodeViewModel @Inject constructor(
         viewModelScope.launch {
             val customerId = sessionDataStore.customerId.first() ?: return@launch
             _customerName.value = sessionDataStore.customerName.first().orEmpty()
-            // Preferir ID estable (evita fallos de formato de teléfono en POS).
             val qrData = "INTIMO_LOYALTY:$customerId"
             try {
                 val writer = QRCodeWriter()
@@ -77,32 +80,69 @@ fun QRCodeScreen(viewModel: QRCodeViewModel = hiltViewModel()) {
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.weight(1f))
-        Text("Tu Código QR", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
+        Spacer(Modifier.weight(0.6f))
+        Text(
+            "Tu código QR",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = IntimoColors.Cream,
+        )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Muestra este código al cajero para acumular puntos",
+            "Muéstralo al cajero antes de pagar para acumular puntos",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = IntimoColors.SubtleText,
-            modifier = Modifier.padding(horizontal = 24.dp)
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
         Spacer(Modifier.height(32.dp))
-        Card(
-            modifier = Modifier.size(280.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(20.dp)
+
+        Box(
+            modifier = Modifier
+                .size(300.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(IntimoColors.Caramel.copy(alpha = 0.35f), IntimoColors.CaramelDark.copy(alpha = 0.2f))
+                    )
+                )
+                .border(2.dp, IntimoColors.Caramel.copy(alpha = 0.6f), RoundedCornerShape(24.dp))
+                .padding(12.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(modifier = Modifier.fillMaxSize().padding(20.dp), contentAlignment = Alignment.Center) {
-                bitmap?.let {
-                    Image(bitmap = it.asImageBitmap(), contentDescription = "QR Code", modifier = Modifier.fillMaxSize())
-                } ?: CircularProgressIndicator(color = Color.Black)
+            Card(
+                modifier = Modifier.fillMaxSize(),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    bitmap?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = "QR Code",
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } ?: CircularProgressIndicator(color = IntimoColors.Espresso)
+                }
             }
         }
-        Spacer(Modifier.height(24.dp))
-        Text(name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-        Text(IntimoAppInfo.brandName, style = MaterialTheme.typography.bodyMedium, color = IntimoColors.SubtleText)
+
+        Spacer(Modifier.height(28.dp))
+        Text(
+            name,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = IntimoColors.Cream,
+        )
+        Text(
+            IntimoAppInfo.brandName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = IntimoColors.Caramel,
+        )
         Spacer(Modifier.weight(1f))
     }
 }

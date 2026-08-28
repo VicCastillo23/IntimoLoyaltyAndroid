@@ -22,7 +22,10 @@ import com.intimocoffee.loyalty.core.datastore.SessionDataStore
 import com.intimocoffee.loyalty.core.network.CustomerResponse
 import com.intimocoffee.loyalty.core.network.LoyaltyApiService
 import com.intimocoffee.loyalty.core.network.UpdateCustomerRequest
+import com.intimocoffee.loyalty.ui.components.IntimoAvatar
 import com.intimocoffee.loyalty.ui.components.IntimoOutlinedField
+import com.intimocoffee.loyalty.ui.components.IntimoPrimaryButton
+import com.intimocoffee.loyalty.ui.components.IntimoScreenHeader
 import com.intimocoffee.loyalty.ui.theme.IntimoAppInfo
 import com.intimocoffee.loyalty.ui.theme.IntimoColors
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -175,11 +178,19 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Ajustes", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
-        Spacer(Modifier.height(4.dp))
-        Text("Edita tu perfil de cliente", color = IntimoColors.SubtleText)
+        Spacer(Modifier.height(8.dp))
+        val initials = name.trim().split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
+            .ifBlank { "IC" }
+        IntimoAvatar(initials = initials)
+        Spacer(Modifier.height(12.dp))
+        IntimoScreenHeader(
+            title = "Tu perfil",
+            subtitle = "Ajustes y preferencias",
+            modifier = Modifier.fillMaxWidth(),
+        )
         Spacer(Modifier.height(20.dp))
 
         Card(
@@ -253,23 +264,14 @@ fun SettingsScreen(onLogout: () -> Unit, viewModel: SettingsViewModel = hiltView
 
         Spacer(Modifier.height(20.dp))
 
-        Button(
+        IntimoPrimaryButton(
+            text = "Guardar cambios",
             onClick = {
                 viewModel.saveProfile(name, lastName, email, birthDate, favoriteDrink, allergies, gender)
             },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
             enabled = !state.isSaving,
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
-        ) {
-            if (state.isSaving) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
-            } else {
-                Icon(Icons.Default.Save, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Guardar Cambios", fontWeight = FontWeight.Bold)
-            }
-        }
+            loading = state.isSaving,
+        )
 
         Spacer(Modifier.height(12.dp))
 

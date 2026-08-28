@@ -42,13 +42,15 @@ fun IntimoOutlinedField(
             singleLine = singleLine,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-            shape = RoundedCornerShape(4.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.White,
+                focusedBorderColor = IntimoColors.Caramel,
                 unfocusedBorderColor = IntimoColors.BorderMuted,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                cursorColor = Color.White,
+                focusedTextColor = IntimoColors.Cream,
+                unfocusedTextColor = IntimoColors.Cream,
+                cursorColor = IntimoColors.Caramel,
+                focusedContainerColor = IntimoColors.CardBackgroundElevated.copy(alpha = 0.5f),
+                unfocusedContainerColor = Color.Transparent,
             ),
         )
     }

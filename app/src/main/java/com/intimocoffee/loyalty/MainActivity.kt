@@ -3,18 +3,18 @@ package com.intimocoffee.loyalty
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
@@ -36,6 +36,8 @@ import com.intimocoffee.loyalty.feature.history.presentation.HistoryScreen
 import com.intimocoffee.loyalty.feature.qrcode.presentation.QRCodeScreen
 import com.intimocoffee.loyalty.feature.rewards.presentation.RewardsScreen
 import com.intimocoffee.loyalty.feature.settings.presentation.SettingsScreen
+import com.intimocoffee.loyalty.ui.components.IntimoNavItem
+import com.intimocoffee.loyalty.ui.components.IntimoWarmBackground
 import com.intimocoffee.loyalty.ui.theme.IntimoCoffeeLoyaltyTheme
 import com.intimocoffee.loyalty.ui.theme.IntimoColors
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,42 +49,72 @@ data class BottomNavItem(val route: String, val label: String, val icon: ImageVe
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    
+
     @Inject
     lateinit var sessionDataStore: SessionDataStore
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         val isLoggedIn = runBlocking { sessionDataStore.isLoggedIn.first() }
-        
+
         setContent {
             IntimoCoffeeLoyaltyTheme {
                 var showSplash by remember { mutableStateOf(true) }
-                
+                val splashAlpha by animateFloatAsState(
+                    targetValue = if (showSplash) 1f else 0f,
+                    label = "splashAlpha",
+                )
+
                 LaunchedEffect(Unit) {
-                    delay(1500)
+                    delay(1400)
                     showSplash = false
                 }
-                
-                if (showSplash) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black),
-                        contentAlignment = Alignment.Center
+
+                Box(Modifier.fillMaxSize()) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.splash_logo),
-                            contentDescription = "Íntimo Coffee",
-                            modifier = Modifier
-                                .padding(horizontal = 32.dp)
-                                .size(200.dp)
-                        )
+                        if (!showSplash) {
+                            LoyaltyApp(startLoggedIn = isLoggedIn)
+                        }
                     }
-                } else {
-                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        LoyaltyApp(startLoggedIn = isLoggedIn)
+
+                    if (splashAlpha > 0.01f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .alpha(splashAlpha)
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(Color(0xFF0D0B0A), Color(0xFF1A120E))
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(240.dp)
+                                    .background(
+                                        Brush.radialGradient(
+                                            listOf(
+                                                IntimoColors.Caramel.copy(alpha = 0.25f),
+                                                Color.Transparent,
+                                            ),
+                                        ),
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.splash_logo),
+                                    contentDescription = "Íntimo Coffee",
+                                    modifier = Modifier
+                                        .padding(horizontal = 40.dp)
+                                        .size(160.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -94,14 +126,14 @@ class MainActivity : ComponentActivity() {
 fun LoyaltyApp(startLoggedIn: Boolean) {
     val navController = rememberNavController()
     val startDestination = if (startLoggedIn) Destinations.MAIN else Destinations.LOGIN
-    
+
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Destinations.LOGIN) {
             LoginScreen(
                 onLoginSuccess = {
                     navController.navigate(Destinations.MAIN) { popUpTo(Destinations.LOGIN) { inclusive = true } }
                 },
-                onNavigateToRegister = { navController.navigate(Destinations.REGISTER) }
+                onNavigateToRegister = { navController.navigate(Destinations.REGISTER) },
             )
         }
         composable(Destinations.REGISTER) {
@@ -109,7 +141,7 @@ fun LoyaltyApp(startLoggedIn: Boolean) {
                 onRegisterSuccess = {
                     navController.navigate(Destinations.MAIN) { popUpTo(Destinations.LOGIN) { inclusive = true } }
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
             )
         }
         composable(Destinations.MAIN) {
@@ -131,66 +163,122 @@ fun MainScreen(onLogout: () -> Unit) {
         BottomNavItem(BottomNavDestinations.HISTORY, "Historial", Icons.Default.History),
         BottomNavItem(BottomNavDestinations.SETTINGS, "Ajustes", Icons.Default.Settings),
     )
-    
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            NavigationBar(
-                containerColor = IntimoColors.TabBar,
-                contentColor = androidx.compose.ui.graphics.Color.White
+            IntimoBottomBar(
+                items = bottomNavItems,
+                innerNavController = innerNavController,
+            )
+        },
+    ) { padding ->
+        IntimoWarmBackground {
+            NavHost(
+                navController = innerNavController,
+                startDestination = BottomNavDestinations.DASHBOARD,
+                modifier = Modifier.padding(padding),
             ) {
-                val navBackStackEntry by innerNavController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-                bottomNavItems.forEach { item ->
-                    NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) },
-                        selected = currentDestination?.hierarchy?.any { it.route == item.route } == true,
-                        onClick = {
-                            innerNavController.navigate(item.route) {
+                composable(BottomNavDestinations.DASHBOARD) {
+                    DashboardScreen(
+                        onOpenCanjeables = {
+                            rewardsPendingCategory = "POINTS"
+                            innerNavController.navigate(BottomNavDestinations.REWARDS) {
                                 popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
                             }
                         },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = androidx.compose.ui.graphics.Color.White,
-                            selectedTextColor = androidx.compose.ui.graphics.Color.White,
-                            unselectedIconColor = androidx.compose.ui.graphics.Color(0xFF666666),
-                            unselectedTextColor = androidx.compose.ui.graphics.Color(0xFF666666),
-                            indicatorColor = Color.Transparent
-                        )
+                    )
+                }
+                composable(BottomNavDestinations.REWARDS) {
+                    RewardsScreen(
+                        pendingCategoryFromParent = rewardsPendingCategory,
+                        onPendingCategoryConsumed = { rewardsPendingCategory = null },
+                    )
+                }
+                composable(BottomNavDestinations.QR_CODE) { QRCodeScreen() }
+                composable(BottomNavDestinations.HISTORY) { HistoryScreen() }
+                composable(BottomNavDestinations.SETTINGS) { SettingsScreen(onLogout = onLogout) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IntimoBottomBar(
+    items: List<BottomNavItem>,
+    innerNavController: androidx.navigation.NavHostController,
+) {
+    val navBackStackEntry by innerNavController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val leftItems = items.take(2)
+    val qrItem = items[2]
+    val rightItems = items.takeLast(2)
+
+    Surface(
+        color = IntimoColors.TabBar,
+        shadowElevation = 16.dp,
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceEvenly) {
+                leftItems.forEach { item ->
+                    IntimoNavItem(
+                        label = item.label,
+                        icon = item.icon,
+                        selected = currentRoute == item.route,
+                        onClick = { navigateTab(innerNavController, item.route) },
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier.offset(y = (-10).dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                FloatingActionButton(
+                    onClick = { navigateTab(innerNavController, qrItem.route) },
+                    containerColor = IntimoColors.Caramel,
+                    contentColor = IntimoColors.Espresso,
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 6.dp,
+                        pressedElevation = 10.dp,
+                    ),
+                    modifier = Modifier.size(58.dp),
+                ) {
+                    Icon(Icons.Default.QrCode2, contentDescription = qrItem.label, modifier = Modifier.size(28.dp))
+                }
+            }
+
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceEvenly) {
+                rightItems.forEach { item ->
+                    IntimoNavItem(
+                        label = item.label,
+                        icon = item.icon,
+                        selected = currentRoute == item.route,
+                        onClick = { navigateTab(innerNavController, item.route) },
                     )
                 }
             }
         }
-    ) { padding ->
-        NavHost(
-            navController = innerNavController,
-            startDestination = BottomNavDestinations.DASHBOARD,
-            modifier = Modifier.padding(padding)
-        ) {
-            composable(BottomNavDestinations.DASHBOARD) {
-                DashboardScreen(
-                    onOpenCanjeables = {
-                        rewardsPendingCategory = "POINTS"
-                        innerNavController.navigate(BottomNavDestinations.REWARDS) {
-                            popUpTo(innerNavController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-            }
-            composable(BottomNavDestinations.REWARDS) {
-                RewardsScreen(
-                    pendingCategoryFromParent = rewardsPendingCategory,
-                    onPendingCategoryConsumed = { rewardsPendingCategory = null }
-                )
-            }
-            composable(BottomNavDestinations.QR_CODE) { QRCodeScreen() }
-            composable(BottomNavDestinations.HISTORY) { HistoryScreen() }
-            composable(BottomNavDestinations.SETTINGS) { SettingsScreen(onLogout = onLogout) }
-        }
+    }
+}
+
+private fun navigateTab(
+    navController: androidx.navigation.NavHostController,
+    route: String,
+) {
+    navController.navigate(route) {
+        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }
